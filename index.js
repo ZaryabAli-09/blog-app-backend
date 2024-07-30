@@ -37,6 +37,9 @@ app.use(
   })
 );
 // routes
+app.get("/", (req, res) => {
+  return res.status(200).json("Blog api is working");
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/posts", postRoutes);
