@@ -59,7 +59,11 @@ const signIn = async (req, res, next) => {
     );
     // removing the password
     validUser.password = undefined;
-    res.cookie("token", token, { httpOnly: true });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true, // Ensure this is set if using HTTPS
+      sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
+    });
     res.status(200).json(validUser);
   } catch (error) {
     next(error);
@@ -82,6 +86,8 @@ const googleAuth = async (req, res, next) => {
         .status(200)
         .cookie("token", token, {
           httpOnly: true,
+          secure: true, // Ensure this is set if using HTTPS
+          sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
         })
         .json(user);
     } else {
@@ -106,6 +112,8 @@ const googleAuth = async (req, res, next) => {
         .status(200)
         .cookie("token", token, {
           httpOnly: true,
+          secure: true, // Ensure this is set if using HTTPS
+          sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
         })
         .json(newUser);
     }
