@@ -8,6 +8,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from "url";
 import path from "path";
+import helemt from "helmet";
+import compression from "compression";
 
 const app = express();
 
@@ -15,7 +17,10 @@ const app = express();
 dotenv.config();
 
 const port = process.env.PORT || 8000;
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://techscrolls.netlify.app",
+];
 
 // Get the directory name using import.meta.url
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +33,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.json());
 // app.use(express.static(path.resolve(__dirname, "dist")));
 app.use(cookieParser());
+app.use(helemt());
+app.use(compression());
 // for cross origin connection
 app.use(
   cors({
