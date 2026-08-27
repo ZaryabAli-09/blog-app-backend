@@ -1,25 +1,32 @@
 // multerConfig.js
 import multer from "multer";
 import path from "path";
+import { fileURLToPath } from "url";
 
-// Define the maximum file size (1.5MB)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+import fs from "fs";
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
 
-// Define allowed file types
 const ALLOWED_FILE_TYPES = /jpeg|jpg|png/;
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads"); // Save files to 'uploads' directory
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    // Ensure the file name has the techscroll_ prefix and proper extension
     cb(null, `techscroll_${Date.now()}_${file.originalname}`);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  // Check file type
   const extname = ALLOWED_FILE_TYPES.test(
     path.extname(file.originalname).toLowerCase()
   );

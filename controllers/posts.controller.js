@@ -186,10 +186,31 @@ const editPost = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    const existingPost = await Post.findById(req.params.postId);
+    if (!existingPost) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    let image = existingPost.image;
+    let imagePublicUrl = existingPost.imagePublicUrl;
+
+    if (req.file) {
+      const uploadedFile = await uploadToCloudinary(req.file.path);
+      if (uploadedFile) {
+        image = uploadedFile.secure_url;
+        imagePublicUrl = uploadedFile.public_id;
+        if (existingPost.imagePublicUrl) {
+          await cloudinary.uploader.destroy(existingPost.imagePublicUrl);
+        }
+      }
+    }
+
     let updateData = {
       title: req.body.title,
       category: req.body.category,
       content: req.body.content,
+      image: image,
+      imagePublicUrl: imagePublicUrl,
     };
 
     if (req.body.staffPick !== undefined) {

@@ -12,7 +12,12 @@ cloudinary.config({
 const uploadToCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) {
-      return console.log("could not find path of file");
+      return null;
+    }
+
+    if (!fs.existsSync(localFilePath)) {
+      console.error("File not found for upload:", localFilePath);
+      return null;
     }
 
     const response = await cloudinary.uploader.upload(localFilePath, {
@@ -25,8 +30,15 @@ const uploadToCloudinary = async (localFilePath) => {
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
-    console.log(error);
-    fs.unlinkSync(localFilePath);
+    console.error("Cloudinary upload error:", error);
+    if (localFilePath && fs.existsSync(localFilePath)) {
+      try {
+        fs.unlinkSync(localFilePath);
+      } catch (unlinkError) {
+        console.error("Failed to delete local file:", unlinkError);
+      }
+    }
+    return null;
   }
 };
 

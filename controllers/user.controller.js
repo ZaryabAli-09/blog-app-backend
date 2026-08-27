@@ -7,9 +7,6 @@ const updateUser = async (req, res, next) => {
     if (req.id !== req.params.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    if (!req.body.password || req.body.password === "") {
-      return res.status(400).json({ message: "Please enter password" });
-    }
 
     const existingUser = await User.findById(req.params.userId);
     if (!existingUser) {
@@ -25,19 +22,21 @@ const updateUser = async (req, res, next) => {
       }
     }
 
-    const hashedPassword = bcryptjs.hashSync(req.body.password, 10);
+    const updateData = {
+      username: req.body.username || existingUser.username,
+      email: req.body.email || existingUser.email,
+      profilePicture: profilePicture,
+      bio: req.body.bio !== undefined ? req.body.bio : existingUser.bio,
+      socialLinks: req.body.socialLinks || existingUser.socialLinks,
+    };
+
+    if (req.body.password) {
+      updateData.password = bcryptjs.hashSync(req.body.password, 10);
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
-      {
-        $set: {
-          username: req.body.username || existingUser.username,
-          email: req.body.email || existingUser.email,
-          profilePicture: profilePicture,
-          bio: req.body.bio !== undefined ? req.body.bio : existingUser.bio,
-          socialLinks: req.body.socialLinks || existingUser.socialLinks,
-          password: hashedPassword,
-        },
-      },
+      { $set: updateData },
       { new: true }
     );
     res

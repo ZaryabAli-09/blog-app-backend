@@ -18,7 +18,7 @@ router.get("/get-categories", getPostCategories);
 router.post("/create", verifyUser, upload.single("file"), create);
 router.get("/getposts-length", verifyUser, getPostsLength);
 router.delete("/deletepost/:postId/:userId", verifyUser, deletePost);
-router.put("/editpost/:postId/:userId", verifyUser, editPost);
+router.put("/editpost/:postId/:userId", verifyUser, upload.single("file"), editPost);
 router.patch("/staff-pick/:postId", verifyUser, toggleStaffPick);
 router.get("/staff-picks", getStaffPicks);
 
