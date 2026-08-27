@@ -1,5 +1,6 @@
 import bcryptjs from "bcryptjs";
 import User from "../models/user.model.js";
+import { uploadToCloudinary } from "../config/cloudinary.config.js";
 
 const updateUser = async (req, res, next) => {
   try {
@@ -10,14 +11,30 @@ const updateUser = async (req, res, next) => {
       return res.status(400).json({ message: "Please enter password" });
     }
 
+    const existingUser = await User.findById(req.params.userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let profilePicture = req.body.profilePicture || existingUser.profilePicture;
+
+    if (req.file) {
+      const uploadedFile = await uploadToCloudinary(req.file.path);
+      if (uploadedFile) {
+        profilePicture = uploadedFile.secure_url;
+      }
+    }
+
     const hashedPassword = bcryptjs.hashSync(req.body.password, 10);
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
       {
         $set: {
-          username: req.body.username,
-          email: req.body.email,
-          profilePicture: req.body.profilePicture || updateUser.profilePicture,
+          username: req.body.username || existingUser.username,
+          email: req.body.email || existingUser.email,
+          profilePicture: profilePicture,
+          bio: req.body.bio !== undefined ? req.body.bio : existingUser.bio,
+          socialLinks: req.body.socialLinks || existingUser.socialLinks,
           password: hashedPassword,
         },
       },

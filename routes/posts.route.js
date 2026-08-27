@@ -7,6 +7,8 @@ import {
   editPost,
   getPostsLength,
   getPostCategories,
+  toggleStaffPick,
+  getStaffPicks,
 } from "../controllers/posts.controller.js";
 import { upload } from "../config/multer.config.js";
 const router = express.Router();
@@ -17,5 +19,7 @@ router.post("/create", verifyUser, upload.single("file"), create);
 router.get("/getposts-length", verifyUser, getPostsLength);
 router.delete("/deletepost/:postId/:userId", verifyUser, deletePost);
 router.put("/editpost/:postId/:userId", verifyUser, editPost);
+router.patch("/staff-pick/:postId", verifyUser, toggleStaffPick);
+router.get("/staff-picks", getStaffPicks);
 
 export default router;

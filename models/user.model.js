@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    bio: {
+      type: String,
+    },
+    profilePicture: {
+      type: String,
+    },
+    socialLinks: {
+      type: Object,
+    },
   },
   { timestamps: true, strict: true }
 );

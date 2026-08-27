@@ -17,6 +17,7 @@ const uploadToCloudinary = async (localFilePath) => {
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "image",
+      folder: "techscrolls",
     });
 
     console.log("file uploaded ", response.url);

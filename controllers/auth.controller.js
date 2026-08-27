@@ -23,7 +23,7 @@ const signUp = async (req, res, next) => {
     // save is builtin function to save data to database and is asynchronous
     await newUser.save();
 
-    res.status(200).json({ message: "Signup successfull" });
+    res.status(200).json({ message: "Signup successful" });
   } catch (error) {
     next(error);
   }
@@ -59,10 +59,11 @@ const signIn = async (req, res, next) => {
     );
     // removing the password
     validUser.password = undefined;
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, // Ensure this is set if using HTTPS
-      sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "Lax",
     });
     res.status(200).json(validUser);
   } catch (error) {
@@ -70,56 +71,4 @@ const signIn = async (req, res, next) => {
   }
 };
 
-const googleAuth = async (req, res, next) => {
-  const { name, email, googlePhotoUrl } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-    if (user) {
-      const token = jwt.sign(
-        { id: user._id, isAdmin: user.isAdmin },
-        process.env.SECRET_KEY,
-        { expiresIn: "10d" }
-      );
-      user.password = undefined;
-      res
-        .status(200)
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: true, // Ensure this is set if using HTTPS
-          sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
-        })
-        .json(user);
-    } else {
-      const generatedPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
-      const newUser = new User({
-        username:
-          name.toLowerCase().split(" ").join("") +
-          Math.random().toString(9).slice(-4),
-        email: email,
-        profilePicture: googlePhotoUrl,
-        password: hashedPassword,
-      });
-      await newUser.save();
-      const token = jwt.sign(
-        { id: newUser._id, isAdmin: newUser.isAdmin },
-        process.env.SECRET_KEY,
-        { expiresIn: "10d" }
-      );
-      newUser.password = undefined;
-      res
-        .status(200)
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: true, // Ensure this is set if using HTTPS
-          sameSite: "None", // Use 'None' for cross-site contexts, 'Strict' or 'Lax' otherwise
-        })
-        .json(newUser);
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-export { signUp, signIn, googleAuth };
+export { signUp, signIn };

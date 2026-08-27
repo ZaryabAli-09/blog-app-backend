@@ -1,10 +1,32 @@
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import Post from "../models/post.model.js";
+import User from "../models/user.model.js";
 import { v2 as cloudinary } from "cloudinary";
+
+const generateUniqueSlug = async (title, postId = null) => {
+  const baseSlug = title
+    .split(" ")
+    .join("-")
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9-]/g, "-");
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const existingPost = await Post.findOne({
+      slug,
+      ...(postId && { _id: { $ne: postId } }),
+    });
+    if (!existingPost) break;
+    slug = `${baseSlug}-${Date.now()}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+};
 
 const create = async (req, res, next) => {
   if (!req.isAdmin) {
-    console.log(req.isAdmin);
     return res.status(401).json({ message: "Unauthorized" });
   }
   if (!req.body.title || !req.body.content) {
@@ -12,17 +34,12 @@ const create = async (req, res, next) => {
       .status(400)
       .json({ message: "Please fill all the required fields" });
   }
-  const slug = req.body.title
-    .split(" ")
-    .join("-")
-    .toLowerCase()
-    .replace(/[^a-zA-z0-9-]/g, "-");
-
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  // Upload file to Cloudinary
+  const slug = await generateUniqueSlug(req.body.title);
+
   const localFilePath = req.file.path;
 
   try {
@@ -41,6 +58,7 @@ const create = async (req, res, next) => {
       imagePublicUrl: uploadedFile.public_id,
       category: req.body.category,
       slug: slug,
+      staffPick: req.body.staffPick || false,
     });
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
@@ -85,8 +103,29 @@ const getPosts = async (req, res, next) => {
       .skip(startIndex)
       .limit(limit);
 
+    const userIds = [...new Set(posts.map((post) => post.userId))];
+    const users = await User.find(
+      { _id: { $in: userIds } },
+      "username profilePicture bio"
+    );
+    const userMap = new Map(users.map((user) => [user._id.toString(), user]));
+
+    const postsWithAuthor = posts.map((post) => {
+      const author = userMap.get(post.userId);
+      return {
+        ...post.toObject(),
+        author: author
+          ? {
+              username: author.username,
+              profilePicture: author.profilePicture,
+              bio: author.bio,
+            }
+          : null,
+      };
+    });
+
     res.status(200).json({
-      posts,
+      posts: postsWithAuthor,
     });
   } catch (error) {
     next(error);
@@ -95,7 +134,6 @@ const getPosts = async (req, res, next) => {
 
 const getPostsLength = async (req, res, next) => {
   if (!req.isAdmin) {
-    console.log(req.isAdmin);
     return res.status(401).json({ message: "Unauthorized" });
   }
   try {
@@ -135,7 +173,6 @@ const deletePost = async (req, res, next) => {
       post.imagePublicUrl
     );
 
-    console.log(deletePostImage);
     await Post.deleteOne({ _id: post._id });
     res.status(200).json({ message: "The post has been deleted" });
   } catch (error) {
@@ -148,14 +185,25 @@ const editPost = async (req, res, next) => {
     if (!req.isAdmin || req.id !== req.params.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+
+    let updateData = {
+      title: req.body.title,
+      category: req.body.category,
+      content: req.body.content,
+    };
+
+    if (req.body.staffPick !== undefined) {
+      updateData.staffPick = req.body.staffPick;
+    }
+
+    if (req.body.title) {
+      updateData.slug = await generateUniqueSlug(req.body.title, req.params.postId);
+    }
+
     const updatedPost = await Post.findByIdAndUpdate(
       req.params.postId,
       {
-        $set: {
-          title: req.body.title,
-          category: req.body.category,
-          content: req.body.content,
-        },
+        $set: updateData,
       },
       { new: true }
     );
@@ -164,6 +212,61 @@ const editPost = async (req, res, next) => {
     next(error);
   }
 };
+const toggleStaffPick = async (req, res, next) => {
+  try {
+    if (!req.isAdmin) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    post.staffPick = !post.staffPick;
+    const updatedPost = await post.save();
+    res.status(200).json(updatedPost);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getStaffPicks = async (req, res, next) => {
+  try {
+    const startIndex = parseInt(req.query.startIndex) || 0;
+    const limit = parseInt(req.query.limit) || 9;
+    const sortDirection = req.query.order === "asc" ? 1 : -1;
+
+    const posts = await Post.find({ staffPick: true })
+      .sort({ updatedAt: sortDirection })
+      .skip(startIndex)
+      .limit(limit);
+
+    const userIds = [...new Set(posts.map((post) => post.userId))];
+    const users = await User.find(
+      { _id: { $in: userIds } },
+      "username profilePicture bio"
+    );
+    const userMap = new Map(users.map((user) => [user._id.toString(), user]));
+
+    const postsWithAuthor = posts.map((post) => {
+      const author = userMap.get(post.userId);
+      return {
+        ...post.toObject(),
+        author: author
+          ? {
+              username: author.username,
+              profilePicture: author.profilePicture,
+              bio: author.bio,
+            }
+          : null,
+      };
+    });
+
+    res.status(200).json({ posts: postsWithAuthor });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   getPostsLength,
   create,
@@ -171,4 +274,6 @@ export {
   deletePost,
   editPost,
   getPostCategories,
+  toggleStaffPick,
+  getStaffPicks,
 };

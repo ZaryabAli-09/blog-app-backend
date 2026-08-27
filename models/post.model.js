@@ -32,6 +32,13 @@ const postSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    staffPick: {
+      type: Boolean,
+      default: false,
+    },
+    authorAvatar: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
