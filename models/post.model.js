@@ -32,7 +32,7 @@ const postSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    staffPick: {
+    featured: {
       type: Boolean,
       default: false,
     },

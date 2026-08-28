@@ -58,7 +58,7 @@ const create = async (req, res, next) => {
       imagePublicUrl: uploadedFile.public_id,
       category: req.body.category,
       slug: slug,
-      staffPick: req.body.staffPick || false,
+      featured: req.body.featured || false,
     });
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
@@ -213,8 +213,8 @@ const editPost = async (req, res, next) => {
       imagePublicUrl: imagePublicUrl,
     };
 
-    if (req.body.staffPick !== undefined) {
-      updateData.staffPick = req.body.staffPick;
+    if (req.body.featured !== undefined) {
+      updateData.featured = req.body.featured;
     }
 
     if (req.body.title) {
@@ -233,7 +233,7 @@ const editPost = async (req, res, next) => {
     next(error);
   }
 };
-const toggleStaffPick = async (req, res, next) => {
+const toggleFeatured = async (req, res, next) => {
   try {
     if (!req.isAdmin) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -242,7 +242,7 @@ const toggleStaffPick = async (req, res, next) => {
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    post.staffPick = !post.staffPick;
+    post.featured = !post.featured;
     const updatedPost = await post.save();
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -250,13 +250,13 @@ const toggleStaffPick = async (req, res, next) => {
   }
 };
 
-const getStaffPicks = async (req, res, next) => {
+const getFeatured = async (req, res, next) => {
   try {
     const startIndex = parseInt(req.query.startIndex) || 0;
     const limit = parseInt(req.query.limit) || 9;
     const sortDirection = req.query.order === "asc" ? 1 : -1;
 
-    const posts = await Post.find({ staffPick: true })
+    const posts = await Post.find({ featured: true })
       .sort({ updatedAt: sortDirection })
       .skip(startIndex)
       .limit(limit);
@@ -295,6 +295,6 @@ export {
   deletePost,
   editPost,
   getPostCategories,
-  toggleStaffPick,
-  getStaffPicks,
+  toggleFeatured,
+  getFeatured,
 };
