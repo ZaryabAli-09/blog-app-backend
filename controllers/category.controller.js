@@ -1,5 +1,6 @@
 import Category from "../models/category.model.js";
 
+// create category controller
 const createCategory = async (req, res, next) => {
   try {
     if (!req.isAdmin) {
@@ -23,6 +24,8 @@ const createCategory = async (req, res, next) => {
   }
 };
 
+// get categories controller
+
 const getCategories = async (req, res, next) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
@@ -31,6 +34,8 @@ const getCategories = async (req, res, next) => {
     next(error);
   }
 };
+
+// delete category controller
 
 const deleteCategory = async (req, res, next) => {
   try {
